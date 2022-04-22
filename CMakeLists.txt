@@ -21,7 +21,7 @@ HunterGate(
 )
 
 # TODO: rename project and delete this comment
-project(kv_storage VERSION 0.1.0)
+project(lab_10_kv_storage VERSION 0.1.0)
 string(APPEND CMAKE_CXX_FLAGS " -pedantic -Werror -Wall -Wextra")
 string(APPEND CMAKE_CXX_FLAGS " -Wno-unused-command-line-argument")
 string(APPEND CMAKE_CXX_FLAGS " -Wshadow -Wnon-virtual-dtor")

@@ -1,5 +1,5 @@
 #include <example.hpp>
 
 int main() {
-  example();
+  //--log-level --thread_count --output
 }
