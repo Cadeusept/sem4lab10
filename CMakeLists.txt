@@ -34,8 +34,8 @@ find_package(GTest CONFIG REQUIRED)
 hunter_add_package(rocksdb)
 find_package(RocksDB CONFIG REQUIRED)
 
-hunter_add_package(Boost COMPONENTS program_options thread)
-find_package(Boost CONFIG REQUIRED program_options thread)
+hunter_add_package(Boost COMPONENTS program_options thread log filesystem)
+find_package(Boost CONFIG REQUIRED program_options thread log log_setup filesystem)
 
 add_library(${PROJECT_NAME} STATIC
   # enum your files and delete this comment
@@ -51,7 +51,13 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   "$<INSTALL_INTERFACE:include>"
 )
 
-target_link_libraries(dbcs ${PROJECT_NAME})
+target_link_libraries(dbcs ${PROJECT_NAME}
+        Boost::program_options
+        Boost::thread
+        Boost::log
+        Boost::log_setup
+        Boost::filesystem
+        RocksDB::rocksdb)
 
 if(BUILD_TESTS)
   add_executable(tests

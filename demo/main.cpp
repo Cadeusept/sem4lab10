@@ -34,6 +34,8 @@ int main(int argc, char* argv[]) {
     std::string source = vm["source"].as<std::string>();
     std::string output = vm["output"].as<std::string>();
 
+    
+
     if (!(source.substr(source.length() - 3,source.length()) == ".db" &&
         output.substr(output.length() - 3,output.length()) == ".db")) {
         throw std::runtime_error("Wrong file format");
