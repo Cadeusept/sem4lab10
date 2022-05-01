@@ -1,16 +1,15 @@
 // Copyright 2021 Your Name <your_email>
 
 #include <hashing_db.hpp>
+#include <logging.hpp>
 
 #include "../third-party/picosha2.h"
 
 std::mutex console_mutex;
 
-void copyDB(std::string source_path, std::string dest_path) {
-  `
-}
-
-FamHandlerContainer DBhasher::openDB(const FamDescContainer &descriptors) {
+FamHandlerContainer openDB(const FamDescContainer &descriptors,
+                                     std::string path,
+                                     std::unique_ptr<rocksdb::DB>& db) {
     FamHandlerContainer handlers;
     std::vector < rocksdb::ColumnFamilyHandle * > newHandles;
     rocksdb::DB *dbStrPtr;
@@ -18,14 +17,14 @@ FamHandlerContainer DBhasher::openDB(const FamDescContainer &descriptors) {
     rocksdb::Status status =
     rocksdb::DB::Open(
           rocksdb::DBOptions(),
-          _path,
+          path,
           descriptors,
           &newHandles,
           &dbStrPtr);
 
     assert(status.ok());
 
-    _db.reset(dbStrPtr);
+    db.reset(dbStrPtr);
 
     for (rocksdb::ColumnFamilyHandle *ptr : newHandles) {
         handlers.emplace_back(ptr);
@@ -34,14 +33,14 @@ FamHandlerContainer DBhasher::openDB(const FamDescContainer &descriptors) {
     return handlers;
 }
 
-FamDescContainer DBhasher::getFamilyDescriptors() {
+FamDescContainer getFamilyDescriptors(std::string path) {
     rocksdb::Options options;
 
     std::vector <std::string> family;
     FamDescContainer descriptors;
     rocksdb::Status status =
         rocksdb::DB::ListColumnFamilies(rocksdb::DBOptions(),
-                                        _path,
+                                        path,
                                         &family);
     assert(status.ok());
 
@@ -52,10 +51,11 @@ FamDescContainer DBhasher::getFamilyDescriptors() {
   return descriptors;
 }
 
-StrContainer DBhasher::getStrs(rocksdb::ColumnFamilyHandle *family) {
+StrContainer getStrs(rocksdb::ColumnFamilyHandle *family,
+                     std::unique_ptr<rocksdb::DB>& db) {
   boost::unordered_map <std::string, std::string> dbCase;
   std::unique_ptr <rocksdb::Iterator>
-      it(_db->NewIterator(rocksdb::ReadOptions(),
+      it(db->NewIterator(rocksdb::ReadOptions(),
                              family));
 
   for (it->SeekToFirst(); it->Valid(); it->Next()) {
@@ -67,14 +67,16 @@ StrContainer DBhasher::getStrs(rocksdb::ColumnFamilyHandle *family) {
   return dbCase;
 }
 
-void DBhasher::setupHash
+void setupHash
     (FamHandlerContainer *handlers,
-     std::list <StrContainer> *StrContainerList) {
+     std::list <StrContainer> *StrContainerList,
+     std::unique_ptr<rocksdb::DB>& db,
+     std::unique_ptr<std::mutex>& thread_mutex) {
     while (!handlers->empty()) {
-        _mutex.lock();
+        thread_mutex->lock();
 
         if (handlers->empty()) {
-            _mutex.unlock();
+            thread_mutex->unlock();
             continue;
         }
 
@@ -84,14 +86,15 @@ void DBhasher::setupHash
         StrContainer str_container = StrContainerList->front();
         StrContainerList->pop_front();
 
-        _mutex.unlock();
+        thread_mutex->unlock();
 
-        writeHash(family.get(), str_container);
+        writeHash(family.get(), str_container, db);
     }
 }
 
-void DBhasher::writeHash
-        (rocksdb::ColumnFamilyHandle *family, StrContainer strContainer) {
+void writeHash
+        (rocksdb::ColumnFamilyHandle *family, StrContainer strContainer,
+          std::unique_ptr<rocksdb::DB>& db) {
     for (auto it = strContainer.begin(); it != strContainer.end(); ++it)
     {
         std::string hash = picosha2::hash256_hex_string(it->first +
@@ -100,8 +103,8 @@ void DBhasher::writeHash
         std::cout << "key: " << it->first << " hash: " << hash << std::endl;
         console_mutex.unlock();
 
-        //logs::logInfo(it->first, hash);
-        rocksdb::Status status = _db->Put(rocksdb::WriteOptions(),
+        logs::logInfo(it->first, hash);
+        rocksdb::Status status = db->Put(rocksdb::WriteOptions(),
                                           family,
                                           it->first,
                                           hash);
@@ -109,25 +112,25 @@ void DBhasher::writeHash
     }
 }
 
-void DBhasher::startThreads() {
-    auto descriptors = getFamilyDescriptors();
-    auto handlers = openDB(descriptors);
+void startThreads(std::string path, std::unique_ptr<rocksdb::DB> db,
+                  std::size_t threadCount,
+                  std::unique_ptr<std::mutex> thread_mutex) {
+    auto descriptors = getFamilyDescriptors(path);
+    auto handlers = openDB(descriptors, path, db);
 
     std::list <StrContainer> StrContainerList;
 
     for (auto &family : handlers) {
         StrContainerList.push_back(
-          getStrs(family.get()));
+          getStrs(family.get(), db));
     }
 
-    std::vector <std::thread> threads;
-    threads.reserve(_threadCountHash);
-    for (size_t i = 0; i < _threadCountHash; ++i) {
-        threads.emplace_back(std::thread(&DBhasher::setupHash, this,
-                                       &handlers, &StrContainerList));
-    }
-
-    for (auto &th : threads) {
-        th.join();
+    ThreadPool threads(threadCount);
+    for (size_t i = 0; i < threadCount; ++i) {
+        threads.enqueue([&handlers, &StrContainerList,
+                       &db, &thread_mutex] {
+        setupHash(&handlers, &StrContainerList,
+                  db, thread_mutex);
+        });
     }
 }

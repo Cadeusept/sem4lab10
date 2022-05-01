@@ -8,6 +8,7 @@
 #include <rocksdb/slice.h>
 #include <boost/filesystem.hpp>
 #include <boost/unordered_map.hpp>
+#include "../third-party/ThreadPool/ThreadPool.h"
 
 #include <cassert>
 #include <list>
@@ -23,10 +24,8 @@ using FamHandlerContainer =
     std::list<std::unique_ptr<rocksdb::ColumnFamilyHandle>>;
 using StrContainer = boost::unordered_map<std::string, std::string>;
 
-void copyDB(std::string source_path, std::string dest_path);
-
 class DBhasher {
- private:
+ protected:
   std::string _path;
   std::string _logLVL;
   std::unique_ptr<rocksdb::DB> _db;
@@ -39,18 +38,31 @@ class DBhasher {
            _path(path),
            _logLVL(logLVL),
            _threadCountHash(threadCount){}
-
-  FamHandlerContainer openDB(const FamDescContainer &descriptors);
-
-  FamDescContainer getFamilyDescriptors();
-
-  StrContainer getStrs(rocksdb::ColumnFamilyHandle *);
-
-  void setupHash(FamHandlerContainer *, std::list<StrContainer> *);
-
-  void writeHash(rocksdb::ColumnFamilyHandle *, StrContainer);
-
-  void startThreads();
 };
+
+FamDescContainer getFamilyDescriptors(std::string path);
+
+FamHandlerContainer openDB(const FamDescContainer &descriptors,
+                           std::string path,
+                           std::unique_ptr<rocksdb::DB>& db);
+
+FamDescContainer getFamilyDescriptors(std::string path);
+
+StrContainer getStrs(rocksdb::ColumnFamilyHandle *family,
+                     std::unique_ptr<rocksdb::DB>& db);
+
+void setupHash
+    (FamHandlerContainer *handlers,
+     std::list <StrContainer> *StrContainerList,
+     std::unique_ptr<rocksdb::DB>& db,
+     std::unique_ptr<std::mutex>& thread_mutex);
+
+void writeHash
+    (rocksdb::ColumnFamilyHandle *family, StrContainer strContainer,
+     std::unique_ptr<rocksdb::DB>& db);
+
+void startThreads(std::string path, std::unique_ptr<rocksdb::DB> db,
+                  std::size_t threadCount,
+                  std::unique_ptr<std::mutex> thread_mutex);
 
 #endif // INCLUDE_HASHING_DB_HPP_

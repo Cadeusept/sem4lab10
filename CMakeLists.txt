@@ -40,7 +40,7 @@ find_package(Boost CONFIG REQUIRED program_options thread log log_setup filesyst
 add_library(${PROJECT_NAME} STATIC
   # enum your files and delete this comment
         ${CMAKE_CURRENT_SOURCE_DIR}/sources/hashing_db.cpp
-)
+        ${CMAKE_CURRENT_SOURCE_DIR}/sources/logging.cpp)
 
 add_executable(dbcs
   ${CMAKE_CURRENT_SOURCE_DIR}/demo/main.cpp
