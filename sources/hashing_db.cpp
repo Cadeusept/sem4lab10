@@ -114,7 +114,7 @@ void writeHash
 
 void startThreads(std::string path, std::unique_ptr<rocksdb::DB> db,
                   std::size_t threadCount,
-                  std::unique_ptr<std::mutex> thread_mutex) {
+                  std::unique_ptr<std::mutex>& thread_mutex) {
     auto descriptors = getFamilyDescriptors(path);
     auto handlers = openDB(descriptors, path, db);
 

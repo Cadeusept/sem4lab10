@@ -1,5 +1,6 @@
 #include <boost/program_options.hpp>
 #include <hashing_db.hpp>
+#include <logging.hpp>
 #include <iostream>
 #include <boost/thread.hpp>
 
@@ -11,7 +12,7 @@ int main(int argc, char* argv[]) {
         ("source", po::value<std::string>(), "set source db, NECESSARY")
         ("log-level", po::value<std::string>(), "set log level NECESSARY")
         ("thread_count", po::value<unsigned int>(), "set number of threads")
-        ("output", po::value<std::string>(), "set output db, NECESSARY")
+        ("output", po::value<std::string>(), "set output db")
     ;
 
     po::variables_map vm;
@@ -27,8 +28,8 @@ int main(int argc, char* argv[]) {
     unsigned int thread_count = boost::thread::hardware_concurrency();
 
     if (!vm.count("source") && !vm.count("log-level")) {
+        std::cout << opt_desc << std::endl;
         throw std::runtime_error("One or more necessary args are missing");
-        return 1;
     }
 
     std::string source = vm["source"].as<std::string>();
@@ -49,21 +50,29 @@ int main(int argc, char* argv[]) {
         log_level = vm["log_level"].as<std::string>();
     }
 
-    if (vm.count("log_level") &&
+    if (vm.count("thread_count") &&
         vm["thread_count"].as<unsigned int>() < thread_count) {
         thread_count = vm["thread_count"].as<unsigned int>();
     } else {
-        if (!vm.count("log_level") || vm["thread_count"].as<int>() < 0) {
-            throw std::runtime_error("Wrong thread_count argument");
+        if (!vm.count("thread_count") || vm["thread_count"].as<int>() < 0) {
             std::cout << opt_desc << std::endl;
+            throw std::runtime_error("Wrong thread_count argument");
             return 1;
         }
     }
 
+    std::unique_ptr<std::mutex> thread_mutex;
+
     //TODO: копирование в бд вывода исходной бд
     // если путь до бд вывода существует
-
-    DBhasher hasher = DBhasher(source, thread_count,
+    logs::logInFile();
+    DBhasher db1 = DBhasher(source, thread_count,
                                log_level);
-    hasher.startThreads();
+    if (vm.count("output")) {
+        DBhasher db2 = DBhasher(output, thread_count,
+                                 log_level);
+
+    }
+
+    startThreads(db1._path, db1._db, db1._threadCount, thread_mutex);
 }

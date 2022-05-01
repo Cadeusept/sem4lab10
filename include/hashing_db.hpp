@@ -25,11 +25,11 @@ using FamHandlerContainer =
 using StrContainer = boost::unordered_map<std::string, std::string>;
 
 class DBhasher {
- protected:
+ public:
   std::string _path;
   std::string _logLVL;
   std::unique_ptr<rocksdb::DB> _db;
-  std::size_t _threadCountHash = std::thread::hardware_concurrency();
+  std::size_t _threadCount = std::thread::hardware_concurrency();
   std::mutex _mutex;
  public:
   DBhasher(std::string path,
@@ -37,7 +37,7 @@ class DBhasher {
            std::string logLVL) :
            _path(path),
            _logLVL(logLVL),
-           _threadCountHash(threadCount){}
+           _threadCount(threadCount){}
 };
 
 FamDescContainer getFamilyDescriptors(std::string path);
@@ -61,8 +61,8 @@ void writeHash
     (rocksdb::ColumnFamilyHandle *family, StrContainer strContainer,
      std::unique_ptr<rocksdb::DB>& db);
 
-void startThreads(std::string path, std::unique_ptr<rocksdb::DB> db,
+void startThreads(std::string path, std::unique_ptr<rocksdb::DB>& db,
                   std::size_t threadCount,
-                  std::unique_ptr<std::mutex> thread_mutex);
+                  std::unique_ptr<std::mutex>& thread_mutex);
 
 #endif // INCLUDE_HASHING_DB_HPP_
