@@ -6,12 +6,14 @@
 #include <rocksdb/db.h>
 #include <rocksdb/options.h>
 #include <rocksdb/slice.h>
-#include <boost/unordered_map.h>
+#include <boost/filesystem.hpp>
+#include <boost/unordered_map.hpp>
 
 #include <cassert>
 #include <list>
 #include <mutex>
 #include <thread>
+#include <iostream>
 
 using FamContainer =
     std::list<std::unique_ptr<rocksdb::ColumnFamilyHandle>>;
@@ -20,6 +22,8 @@ using FamDescContainer =
 using FamHandlerContainer =
     std::list<std::unique_ptr<rocksdb::ColumnFamilyHandle>>;
 using StrContainer = boost::unordered_map<std::string, std::string>;
+
+void copyDB(std::string source_path, std::string dest_path);
 
 class DBhasher {
  private:
@@ -36,15 +40,15 @@ class DBhasher {
            _logLVL(logLVL),
            _threadCountHash(threadCount){}
 
-  FamDescContainer getFamilyDescriptors();
-
   FamHandlerContainer openDB(const FamDescContainer &descriptors);
+
+  FamDescContainer getFamilyDescriptors();
 
   StrContainer getStrs(rocksdb::ColumnFamilyHandle *);
 
-  void getHash(rocksdb::ColumnFamilyHandle *, StrContainer);
+  void setupHash(FamHandlerContainer *, std::list<StrContainer> *);
 
-  void startHash(FamHandlerContainer *, std::list<StrContainer> *);
+  void writeHash(rocksdb::ColumnFamilyHandle *, StrContainer);
 
   void startThreads();
 };

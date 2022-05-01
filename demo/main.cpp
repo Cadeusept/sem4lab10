@@ -9,7 +9,7 @@ int main(int argc, char* argv[]) {
     po::options_description opt_desc("Allowed options");
     opt_desc.add_options()
         ("source", po::value<std::string>(), "set source db, NECESSARY")
-        ("log-level", po::value<int>(), "set log level")
+        ("log-level", po::value<std::string>(), "set log level NECESSARY")
         ("thread_count", po::value<unsigned int>(), "set number of threads")
         ("output", po::value<std::string>(), "set output db, NECESSARY")
     ;
@@ -23,27 +23,30 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    int log_level = 0;
+    std::string log_level;
     unsigned int thread_count = boost::thread::hardware_concurrency();
 
-    if (!(vm.count("source") && vm.count("output"))) {
+    if (!vm.count("source") && !vm.count("log-level")) {
         throw std::runtime_error("One or more necessary args are missing");
         return 1;
     }
 
     std::string source = vm["source"].as<std::string>();
-    std::string output = vm["output"].as<std::string>();
+    std::string output;
 
-    
+    if (vm.count("output")) {
+        output = vm["output"].as<std::string>();
+    }
 
     if (!(source.substr(source.length() - 3,source.length()) == ".db" &&
-        output.substr(output.length() - 3,output.length()) == ".db")) {
+          (vm.count("output") == 0 ||
+           output.substr(output.length() - 3, output.length()) == ".db"))) {
         throw std::runtime_error("Wrong file format");
         return 1;
     }
 
     if (vm.count("log_level")) {
-        log_level = vm["log_level"].as<unsigned int>();
+        log_level = vm["log_level"].as<std::string>();
     }
 
     if (vm.count("log_level") &&
@@ -56,5 +59,11 @@ int main(int argc, char* argv[]) {
             return 1;
         }
     }
-    //output
+
+    //TODO: копирование в бд вывода исходной бд
+    // если путь до бд вывода существует
+
+    DBhasher hasher = DBhasher(source, thread_count,
+                               log_level);
+    hasher.startThreads();
 }
