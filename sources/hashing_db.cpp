@@ -112,7 +112,7 @@ void writeHash
     }
 }
 
-void startThreads(std::string path, std::unique_ptr<rocksdb::DB> db,
+void startThreads(std::string path, std::unique_ptr<rocksdb::DB>& db,
                   std::size_t threadCount,
                   std::unique_ptr<std::mutex>& thread_mutex) {
     auto descriptors = getFamilyDescriptors(path);
@@ -129,8 +129,57 @@ void startThreads(std::string path, std::unique_ptr<rocksdb::DB> db,
     for (size_t i = 0; i < threadCount; ++i) {
         threads.enqueue([&handlers, &StrContainerList,
                        &db, &thread_mutex] {
-        setupHash(&handlers, &StrContainerList,
-                  db, thread_mutex);
+            setupHash(&handlers, &StrContainerList,
+                      db, thread_mutex);
         });
     }
+}
+
+void copyDB(DBhasher& source_db, DBhasher& dest_db, std::unique_ptr<std::mutex>& thread_mutex) {
+    auto descriptors = getFamilyDescriptors(source_db._path);
+    auto handlers = openDB(descriptors, source_db._path, source_db._db);
+
+    std::list <StrContainer> StrContainerList;
+
+    for (auto &family : handlers) {
+        StrContainerList.push_back(
+            getStrs(family.get(), source_db._db));
+    }
+
+    std::unique_ptr<rocksdb::DB>& db = dest_db._db;
+
+    ThreadPool threads(dest_db._threadCount);
+    for (size_t i = 0; i < dest_db._threadCount; ++i) {
+        threads.enqueue([&handlers, &StrContainerList,
+                        &db, &thread_mutex] {
+            while (!handlers.empty()) {
+                thread_mutex->lock();
+
+                if (handlers.empty()) {
+                    thread_mutex->unlock();
+                    continue;
+                }
+
+                auto &family = handlers.front();
+                handlers.pop_front();
+
+                StrContainer str_container = StrContainerList.front();
+                StrContainerList.pop_front();
+
+                thread_mutex->unlock();
+
+                for (auto it = str_container.begin(); it != str_container.end(); ++it)
+                {
+                    rocksdb::Status status = db->Put(rocksdb::WriteOptions(),
+                                                      family.get(),
+                                                      it->first,
+                                                      it->second);
+                    assert(status.ok());
+                }
+            }
+        });
+    }
+
+
+
 }

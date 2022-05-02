@@ -71,8 +71,9 @@ int main(int argc, char* argv[]) {
     if (vm.count("output")) {
         DBhasher db2 = DBhasher(output, thread_count,
                                  log_level);
-
+        copyDB(db1,db2);
+        startThreads(db2._path, db2._db, db2._threadCount, thread_mutex);
+    } else {
+        startThreads(db1._path, db1._db, db1._threadCount, thread_mutex);
     }
-
-    startThreads(db1._path, db1._db, db1._threadCount, thread_mutex);
 }

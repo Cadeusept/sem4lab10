@@ -30,7 +30,6 @@ class DBhasher {
   std::string _logLVL;
   std::unique_ptr<rocksdb::DB> _db;
   std::size_t _threadCount = std::thread::hardware_concurrency();
-  std::mutex _mutex;
  public:
   DBhasher(std::string path,
            std::size_t threadCount,
@@ -64,5 +63,8 @@ void writeHash
 void startThreads(std::string path, std::unique_ptr<rocksdb::DB>& db,
                   std::size_t threadCount,
                   std::unique_ptr<std::mutex>& thread_mutex);
+
+void copyDB(DBhasher& source_db, DBhasher& dest_db,
+            std::unique_ptr<std::mutex>& thread_mutex);
 
 #endif // INCLUDE_HASHING_DB_HPP_
