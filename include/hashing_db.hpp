@@ -1,4 +1,4 @@
-// Copyright 2021 Your Name <your_email>
+// Copyright 2022 cadeusept abobus1488822@yandex.ru
 
 #ifndef INCLUDE_HASHING_DB_HPP_
 #define INCLUDE_HASHING_DB_HPP_
@@ -11,6 +11,9 @@
 #include "../third-party/ThreadPool/ThreadPool.h"
 
 #include <cassert>
+#include <vector>
+#include <string>
+#include <memory>
 #include <list>
 #include <mutex>
 #include <thread>

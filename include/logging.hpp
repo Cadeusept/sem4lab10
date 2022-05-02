@@ -1,9 +1,7 @@
-//
-// Created by cadeusept on 01.05.22.
-//
+// Copyright 2022 cadeusept abobus1488822@yandex.ru
 
-#ifndef LAB_10_KV_STORAGE_LOGGING_H
-#define LAB_10_KV_STORAGE_LOGGING_H
+#ifndef INCLUDE_LOGGING_HPP_
+#define INCLUDE_LOGGING_HPP_
 
 #include <iostream>
 #include <boost/log/trivial.hpp>
@@ -29,4 +27,4 @@ namespace logs{
     void logTrace(const std::string &key, const std::string &value);
 }
 
-#endif  // LAB_10_KV_STORAGE_LOGGING_H
+#endif  // INCLUDE_LOGGING_HPP_

@@ -1,6 +1,4 @@
-//
-// Created by cadeusept on 01.05.22.
-//
+// Copyright 2022 cadeusept abobus1488822@yandex.ru
 
 
 #include "logging.hpp"

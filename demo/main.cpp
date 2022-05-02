@@ -1,3 +1,5 @@
+// Copyright 2022 cadeusept abobus1488822@yandex.ru
+
 #include <boost/program_options.hpp>
 #include <hashing_db.hpp>
 #include <logging.hpp>
@@ -63,15 +65,13 @@ int main(int argc, char* argv[]) {
 
     std::unique_ptr<std::mutex> thread_mutex;
 
-    //TODO: копирование в бд вывода исходной бд
-    // если путь до бд вывода существует
     logs::logInFile();
     DBhasher db1 = DBhasher(source, thread_count,
                                log_level);
     if (vm.count("output")) {
         DBhasher db2 = DBhasher(output, thread_count,
                                  log_level);
-        copyDB(db1,db2);
+        copyDB(db1, db2, thread_mutex);
         startThreads(db2._path, db2._db, db2._threadCount, thread_mutex);
     } else {
         startThreads(db1._path, db1._db, db1._threadCount, thread_mutex);

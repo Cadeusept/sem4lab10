@@ -1,4 +1,4 @@
-// Copyright 2021 Your Name <your_email>
+// Copyright 2022 cadeusept abobus1488822@yandex.ru
 
 #include <hashing_db.hpp>
 #include <logging.hpp>
@@ -135,7 +135,8 @@ void startThreads(std::string path, std::unique_ptr<rocksdb::DB>& db,
     }
 }
 
-void copyDB(DBhasher& source_db, DBhasher& dest_db, std::unique_ptr<std::mutex>& thread_mutex) {
+void copyDB(DBhasher& source_db, DBhasher& dest_db,
+            std::unique_ptr<std::mutex>& thread_mutex) {
     auto descriptors = getFamilyDescriptors(source_db._path);
     auto handlers = openDB(descriptors, source_db._path, source_db._db);
 
@@ -168,7 +169,8 @@ void copyDB(DBhasher& source_db, DBhasher& dest_db, std::unique_ptr<std::mutex>&
 
                 thread_mutex->unlock();
 
-                for (auto it = str_container.begin(); it != str_container.end(); ++it)
+                for (auto it = str_container.begin();
+                                              it != str_container.end(); ++it)
                 {
                     rocksdb::Status status = db->Put(rocksdb::WriteOptions(),
                                                       family.get(),
@@ -179,7 +181,4 @@ void copyDB(DBhasher& source_db, DBhasher& dest_db, std::unique_ptr<std::mutex>&
             }
         });
     }
-
-
-
 }
