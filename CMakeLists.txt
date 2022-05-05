@@ -44,6 +44,10 @@ add_library(${PROJECT_NAME} STATIC
 
 add_executable(dbcs
   ${CMAKE_CURRENT_SOURCE_DIR}/demo/main.cpp
+        sources/logging.cpp
+        include/logging.hpp
+        sources/hashing_db.cpp
+        include/hashing_db.hpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC
